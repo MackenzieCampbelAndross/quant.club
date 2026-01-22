@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QUANT | Mainframe</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bgdark: '#050505',
+            textsoft: '#e5e5e5',
+            textmuted: '#737373',
+            accent: '#ff1a1a',
+          },
+          fontFamily: {
+            main: ['Geist', 'Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          animation: {
+            blob: "blob 7s infinite alternate cubic-bezier(0.4, 0, 0.2, 1)",
+            'fade-in': 'fadeIn 2s ease-out forwards',
+            'slide-up': 'slideUp 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          },
+          keyframes: {
+            blob: {
+              "0%": { transform: "translate(0px, 0px) scale(1) rotate(0deg)" },
+              "33%": { transform: "translate(30vw, -30vh) scale(1.5) rotate(45deg)" },
+              "66%": { transform: "translate(-30vw, 20vh) scale(0.8) rotate(-20deg)" },
+              "100%": { transform: "translate(10vw, 30vh) scale(1.2) rotate(10deg)" }
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(40px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html { scroll-padding-top: 100px; }
+    body {
+      font-family: 'Geist', 'Inter', sans-serif;
+      background-color: #050505;
+      color: #f2f2f2;
+      overflow-x: hidden;
+    }
+    
+    .anim-hidden { opacity: 0; transform: translateY(30px); transition: all 1s cubic-bezier(0.16, 1, 0.3, 1); }
+    .anim-visible { opacity: 1; transform: translateY(0); }
+    ::selection { background: #ff1a1a; color: #fff; }
+    
+    /* MARQUEE */
+    @keyframes marqueeRight { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
+    .animate-marquee-slow { animation: marqueeRight 80s linear infinite; width: max-content; display: flex; }
+    .paused { animation-play-state: paused !important; }
+
+    /* 3D GLASS CARDS (Section 3) */
+    .glass-3d-card {
+        height: 450px; 
+        width: 300px;
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        cursor: pointer;
+        background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-top: 1px solid rgba(255,255,255,0.15);
+        border-left: 1px solid rgba(255,255,255,0.15);
+        box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 10px 40px rgba(0,0,0,0.5);
+        position: relative;
+        overflow: hidden;
+    }
+    .glass-3d-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%; width: 50%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+        transform: skewX(-25deg);
+        transition: 0.5s;
+    }
+    .glass-3d-card:hover { 
+        transform: translateY(-15px) scale(1.02);
+        border-color: rgba(255, 26, 26, 0.3);
+        box-shadow: inset 0 0 20px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(255, 26, 26, 0.1);
+    }
+    .glass-3d-card:hover::before { left: 150%; transition: 0.7s; }
+    
+    /* MODAL */
+    #modal-overlay { transition: opacity 0.3s ease, visibility 0.3s ease; }
+    .modal-visible { opacity: 1; visibility: visible; pointer-events: all; }
+    .modal-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    
+    /* LOGO WHITENER */
+    .logo-white {
+        filter: brightness(0) invert(1);
+    }
+
+    /* FADE IN OVERLAY */
+    #page-fade-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: #050505;
+        z-index: 9999;
+        pointer-events: none;
+        transition: opacity 1.5s ease-out; /* 1.5s Fade In */
+        opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="page-fade-overlay"></div>
+
+  <div class="fixed inset-0 w-full h-full pointer-events-none z-0 flex items-center justify-center opacity-40">
+      <div class="absolute top-1/2 left-1/2 w-[800px] h-[800px] bg-[#4a0000] rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-blob"></div>
+      <div class="absolute top-1/2 left-1/2 w-[600px] h-[600px] bg-[#ff1a1a] rounded-full mix-blend-screen filter blur-[120px] opacity-50 animate-blob" style="animation-delay: -2s; animation-duration: 9s"></div>
+  </div>
+
+  <nav class="fixed top-0 w-full z-50 px-8 py-6 flex justify-between items-center backdrop-blur-md border-b border-white/5 bg-black/20">
+      
+      <img src="quant-logo(d).png" alt="QUANT CLUB" class="h-12 w-auto object-contain logo-white">
+
+      <div class="hidden md:flex gap-8 text-xs font-mono tracking-widest text-textmuted">
+          <a href="#mission" class="hover:text-accent transition-colors">MISSION</a>
+          <a href="#outcomes" class="hover:text-accent transition-colors">OUTCOMES</a>
+          <a href="#provisions" class="hover:text-accent transition-colors">PROTOCOLS</a>
+          <a href="#events" class="hover:text-accent transition-colors">EVENTS</a>
+      </div>
+
+      <img src="cit.png" alt="CIT CHENNAI" class="h-12 w-auto object-contain logo-white opacity-90 hover:opacity-100 transition-opacity">
+  </nav>
+
+  <section class="min-h-screen flex flex-col justify-center px-8 md:px-16 pt-20 relative">
+      <div class="max-w-[1440px] mx-auto w-full">
+          <h1 class="anim-element text-[9vw] leading-[0.9] font-bold tracking-tighter text-white/90">QUANTIFY<br>THE FUTURE.</h1>
+          <div class="flex flex-col md:flex-row gap-8 mt-12 md:items-end justify-between anim-element">
+              <p class="max-w-md text-textmuted text-lg font-light leading-relaxed">
+                  The bridge between theoretical finance and deployed reality. 
+                  High-frequency logic meets decentralized architecture.
+              </p>
+              <div class="font-mono text-xs text-right text-textmuted">SCROLL TO EXPLORE <br> ↓</div>
+          </div>
+      </div>
+  </section>
+
+  <section id="mission" class="py-32 px-8 md:px-16 border-t border-white/5 bg-black/40 backdrop-blur-sm">
+      <div class="max-w-5xl mx-auto text-center">
+          <span class="inline-block border border-accent/30 bg-accent/10 px-4 py-1 rounded-full font-mono text-accent text-[10px] tracking-widest mb-12 anim-element">
+              THE MISSION
+          </span>
+          <h2 class="text-3xl md:text-5xl font-medium leading-[1.2] text-white anim-element">
+              A student-led innovation hub for Quantitative Finance, Algorithmic Trading, and AI.
+          </h2>
+          <div class="w-20 h-[1px] bg-white/20 mx-auto my-12 anim-element"></div>
+          <p class="text-xl md:text-2xl text-textmuted font-light leading-relaxed max-w-3xl mx-auto anim-element">
+              We build mastery in financial analytics and programming through collaborative research and competition.
+          </p>
+      </div>
+  </section>
+
+  <section id="outcomes" class="py-32 px-4 md:px-16 border-t border-white/5 relative">
+      <div class="max-w-[1000px] mx-auto">
+          
+          <div class="text-center mb-20 anim-element">
+              <span class="font-mono text-accent text-xs tracking-widest block mb-4">CORE ARCHITECTURE</span>
+              <h2 class="text-5xl md:text-7xl font-bold text-white tracking-tight leading-none">LEARNING<br>OUTCOMES</h2>
+          </div>
+
+          <div class="relative flex flex-col items-center">
+              
+              <div class="absolute top-0 bottom-0 left-1/2 w-[1px] bg-gradient-to-b from-transparent via-white/20 to-transparent -translate-x-1/2 hidden md:block"></div>
+
+              <div class="w-full flex justify-center md:justify-start mb-12 relative anim-element">
+                  <div class="md:w-[45%] md:pr-12 text-center md:text-right">
+                      <div class="font-mono text-accent text-xs mb-2">THEORY</div>
+                      <h3 class="text-xl text-white font-medium mb-2">Quantitative Finance Fundamentals</h3>
+                      <p class="text-sm text-textmuted">Understanding market mechanics and pricing models.</p>
+                  </div>
+                  <div class="absolute left-1/2 -translate-x-1/2 top-2 w-3 h-3 bg-black border border-accent rounded-full hidden md:block shadow-[0_0_10px_rgba(255,26,26,0.5)]"></div>
+              </div>
+
+              <div class="w-full flex justify-center md:justify-end mb-12 relative anim-element">
+                  <div class="md:w-[45%] md:pl-12 text-center md:text-left">
+                      <div class="font-mono text-accent text-xs mb-2">MATH</div>
+                      <h3 class="text-xl text-white font-medium mb-2">Statistics & Probability</h3>
+                      <p class="text-sm text-textmuted">Stochastic calculus and optimization concepts.</p>
+                  </div>
+                  <div class="absolute left-1/2 -translate-x-1/2 top-2 w-3 h-3 bg-black border border-white/50 rounded-full hidden md:block"></div>
+              </div>
+
+              <div class="w-full flex justify-center md:justify-start mb-12 relative anim-element">
+                  <div class="md:w-[45%] md:pr-12 text-center md:text-right">
+                      <div class="font-mono text-accent text-xs mb-2">CODE</div>
+                      <h3 class="text-xl text-white font-medium mb-2">Python for Quant Research</h3>
+                      <p class="text-sm text-textmuted">NumPy, Pandas, and financial libraries.</p>
+                  </div>
+                  <div class="absolute left-1/2 -translate-x-1/2 top-2 w-3 h-3 bg-black border border-white/50 rounded-full hidden md:block"></div>
+              </div>
+
+              <div class="w-full flex justify-center md:justify-end mb-12 relative anim-element">
+                  <div class="md:w-[45%] md:pl-12 text-center md:text-left">
+                      <div class="font-mono text-accent text-xs mb-2">INTELLIGENCE</div>
+                      <h3 class="text-xl text-white font-medium mb-2">Data Science & ML</h3>
+                      <p class="text-sm text-textmuted">Predictive modeling and neural networks.</p>
+                  </div>
+                  <div class="absolute left-1/2 -translate-x-1/2 top-2 w-3 h-3 bg-black border border-white/50 rounded-full hidden md:block"></div>
+              </div>
+
+              <div class="w-full flex justify-center md:justify-start mb-12 relative anim-element">
+                  <div class="md:w-[45%] md:pr-12 text-center md:text-right">
+                      <div class="font-mono text-accent text-xs mb-2">EXECUTION</div>
+                      <h3 class="text-xl text-white font-medium mb-2">Algorithmic Trading & Backtesting</h3>
+                      <p class="text-sm text-textmuted">Strategy implementation and historical testing.</p>
+                  </div>
+                  <div class="absolute left-1/2 -translate-x-1/2 top-2 w-3 h-3 bg-black border border-white/50 rounded-full hidden md:block"></div>
+              </div>
+
+              <div class="w-full flex justify-center md:justify-end relative anim-element">
+                  <div class="md:w-[45%] md:pl-12 text-center md:text-left">
+                      <div class="font-mono text-accent text-xs mb-2">ANALYSIS</div>
+                      <h3 class="text-xl text-white font-medium mb-2">Research & Presentation</h3>
+                      <p class="text-sm text-textmuted">Analytical thinking and data storytelling.</p>
+                  </div>
+                  <div class="absolute left-1/2 -translate-x-1/2 top-2 w-3 h-3 bg-black border border-accent rounded-full hidden md:block shadow-[0_0_10px_rgba(255,26,26,0.5)]"></div>
+              </div>
+
+          </div>
+      </div>
+  </section>
+
+  <section id="provisions" class="py-32 border-t border-white/5 bg-black/40 backdrop-blur-sm relative overflow-hidden">
+      <div class="px-8 md:px-16 mb-16">
+          <span class="font-mono text-accent text-xs tracking-widest block anim-element mb-4">INFRASTRUCTURE</span>
+          <h2 class="text-5xl md:text-7xl font-bold text-white tracking-tight leading-none anim-element">PROTOCOLS</h2>
+      </div>
+
+      <div class="relative w-full overflow-hidden">
+          <div class="animate-marquee-slow hover:paused gap-8 px-8" id="marquee-track">
+              
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between" onclick="openCardModal('Financial Literacy', 'Deep dive into financial literature...')">
+                  <div class="text-accent font-mono text-xs font-bold">EXPOSURE</div>
+                  <div>
+                      <h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Investments<br>& Trading</h3>
+                      <p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p>
+                  </div>
+              </div>
+              
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between" onclick="openCardModal('Quant Finance', 'Real-world application of risk modeling...')">
+                  <div class="text-accent font-mono text-xs font-bold">HANDS-ON</div>
+                  <div>
+                      <h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Data Driven<br>Decisions</h3>
+                      <p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p>
+                  </div>
+              </div>
+              
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between" onclick="openCardModal('Trading Research', 'Build and backtest your own strategies...')">
+                  <div class="text-accent font-mono text-xs font-bold">PRACTICAL</div>
+                  <div>
+                      <h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Simulations<br>& Projects</h3>
+                      <p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p>
+                  </div>
+              </div>
+              
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between" onclick="openCardModal('Global Arena', 'Sponsorship to participate in contests...')">
+                  <div class="text-accent font-mono text-xs font-bold">COMPETE</div>
+                  <div>
+                      <h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Global<br>Competitions</h3>
+                      <p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p>
+                  </div>
+              </div>
+              
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between" onclick="openCardModal('Skill Stack', 'Rigorous training in linear algebra & Python...')">
+                  <div class="text-accent font-mono text-xs font-bold">SKILLS</div>
+                  <div>
+                      <h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Math &<br>Python</h3>
+                      <p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p>
+                  </div>
+              </div>
+              
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between" onclick="openCardModal('Industry Connect', 'Direct line to alumni in Tier-1 HFT firms...')">
+                  <div class="text-accent font-mono text-xs font-bold">NETWORK</div>
+                  <div>
+                      <h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Expert<br>Access</h3>
+                      <p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p>
+                  </div>
+              </div>
+              
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between" onclick="openCardModal('Career Ready', 'Portfolio building and mock interviews...')">
+                  <div class="text-accent font-mono text-xs font-bold">CAREER</div>
+                  <div>
+                      <h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Fintech<br>Preparation</h3>
+                      <p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p>
+                  </div>
+              </div>
+              
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between"><div class="text-accent font-mono text-xs font-bold">REPEAT</div><div><h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Investments<br>& Trading</h3><p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p></div></div>
+              <div class="glass-3d-card flex-shrink-0 rounded-2xl p-8 flex flex-col justify-between"><div class="text-accent font-mono text-xs font-bold">REPEAT</div><div><h3 class="text-3xl text-white font-bold mb-4 tracking-tight leading-none">Data Driven<br>Decisions</h3><p class="text-xs text-white/50 font-bold uppercase tracking-wider">Click to Expand +</p></div></div>
+          </div>
+      </div>
+
+      <div id="modal-overlay" class="modal-hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeCardModal()"></div>
+          <div class="relative bg-[#111] border border-accent w-full max-w-lg p-10 rounded-2xl shadow-[0_0_50px_rgba(255,0,0,0.2)]">
+              <button onclick="closeCardModal()" class="absolute top-4 right-4 text-white/50 hover:text-white">✕</button>
+              <div class="text-accent font-mono text-xs mb-4">SYSTEM_DETAIL</div>
+              <h2 id="modal-title" class="text-4xl text-white font-bold mb-6">Title</h2>
+              <p id="modal-desc" class="text-textmuted text-lg leading-relaxed">Description goes here.</p>
+          </div>
+      </div>
+  </section>
+
+  <section id="events" class="py-32 px-8 md:px-16 border-t border-white/5">
+      <div class="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-16 relative">
+          <div class="md:col-span-2 space-y-12 order-2 md:order-1">
+              <div class="anim-element"><h4 class="text-white text-2xl font-light mb-2">Workshops</h4><p class="text-textmuted text-sm">Quantitative Finance, Statistics and Python Programming.</p></div>
+              <div class="anim-element"><h4 class="text-white text-2xl font-light mb-2">Simulations</h4><p class="text-textmuted text-sm">Algorithmic Trading and Market Simulation Sessions.</p></div>
+              <div class="anim-element"><h4 class="text-white text-2xl font-light mb-2">Bootcamps</h4><p class="text-textmuted text-sm">Data Science and Machine Learning Intensives.</p></div>
+              <div class="anim-element"><h4 class="text-white text-2xl font-light mb-2">Case Studies</h4><p class="text-textmuted text-sm">Quant and Trading Strategy Competitions.</p></div>
+              <div class="anim-element"><h4 class="text-white text-2xl font-light mb-2">Datathons</h4><p class="text-textmuted text-sm">Research Problem Solving Challenges.</p></div>
+              <div class="anim-element"><h4 class="text-white text-2xl font-light mb-2">Expert Talks</h4><p class="text-textmuted text-sm">Guest Lectures and Industry Expert Talks.</p></div>
+              <div class="anim-element"><h4 class="text-white text-2xl font-light mb-2">Internal Quantathon</h4><p class="text-textmuted text-sm">Trading Simulation Challenges.</p></div>
+              <div class="anim-element"><h4 class="text-white text-2xl font-light mb-2">Showcase</h4><p class="text-textmuted text-sm">Project Showcase and Research Presentation Events.</p></div>
+          </div>
+          <div class="md:col-span-1 order-1 md:order-2 relative">
+              <div class="sticky top-32 text-right">
+                  <span class="font-mono text-accent text-xs tracking-widest block mb-4 anim-element">PROTOCOLS</span>
+                  <h2 class="text-5xl md:text-7xl font-medium text-white leading-[0.9] anim-element">EVENTS &<br>AGENDA</h2>
+                  <div class="w-full h-[1px] bg-white/10 mt-8"></div>
+              </div>
+          </div>
+      </div>
+  </section>
+
+  <footer id="contact" class="py-24 px-8 md:px-16 border-t border-white/10 bg-black">
+      <div class="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-end">
+          <div class="space-y-8">
+              <div>
+                  <h3 class="text-xs font-mono text-accent uppercase tracking-widest mb-4">CONTACT</h3>
+                  <a href="mailto:quantclubcit@gmail.com" class="text-2xl md:text-4xl text-white hover:text-accent transition-colors block mb-6">quantclubcit@gmail.com</a>
+                  
+                  <div class="flex flex-col gap-1">
+                      <span class="text-white text-lg font-light">M Yuvadarshan</span>
+                      <a href="tel:+918122018305" class="text-textmuted font-mono text-sm hover:text-white transition-colors">+91 8122018305</a>
+                  </div>
+              </div>
+              <div class="flex gap-6 text-textmuted">
+                  <a href="#" class="hover:text-white transition-colors">INSTAGRAM</a>
+                  <a href="#" class="hover:text-white transition-colors">LINKEDIN</a>
+                  <a href="#" class="hover:text-white transition-colors">GITHUB</a>
+              </div>
+          </div>
+          <div class="mt-16 md:mt-0 text-right">
+              <div class="text-[15vw] leading-[0.8] font-bold text-white/5 select-none pointer-events-none">QUANT</div>
+              <p class="text-textmuted text-xs font-mono mt-4">© 2025 QUANT CLUB. CIT CHENNAI.</p>
+          </div>
+      </div>
+  </footer>
+
+  <script>
+    // FADE IN REVEAL
+    window.onload = () => {
+        setTimeout(() => {
+            const overlay = document.getElementById('page-fade-overlay');
+            if(overlay) overlay.style.opacity = '0';
+        }, 100);
+    };
+
+    // ----------------------------------------------
+    // MODAL LOGIC
+    // ----------------------------------------------
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDesc = document.getElementById('modal-desc');
+    const marqueeTrack = document.getElementById('marquee-track');
+
+    window.openCardModal = function(title, desc) {
+        modalTitle.innerText = title;
+        modalDesc.innerText = desc;
+        modalOverlay.classList.remove('modal-hidden');
+        modalOverlay.classList.add('modal-visible');
+        marqueeTrack.classList.add('paused');
+    }
+
+    window.closeCardModal = function() {
+        modalOverlay.classList.remove('modal-visible');
+        modalOverlay.classList.add('modal-hidden');
+        marqueeTrack.classList.remove('paused');
+    }
+
+    // ----------------------------------------------
+    // SCROLL REVEAL
+    // ----------------------------------------------
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.remove('anim-hidden');
+          entry.target.classList.add('anim-visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.anim-element').forEach(el => {
+      el.classList.add('anim-hidden'); 
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+</html>

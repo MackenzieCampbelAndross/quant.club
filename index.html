@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QUANT | The Architecture of Logic</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bgdark: '#050505',
+            textsoft: '#e5e5e5',
+            textmuted: '#737373',
+            accent: '#ff1a1a',
+          },
+          fontFamily: {
+            main: ['Geist', 'Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          animation: {
+            blob: "blob 7s infinite alternate cubic-bezier(0.4, 0, 0.2, 1)",
+            'fade-in': 'fadeIn 2s ease-out forwards',
+            'burn-in': 'burnIn 2.5s cubic-bezier(0.16,1,0.3,1) forwards',
+          },
+          keyframes: {
+            blob: {
+              "0%": { transform: "translate(0px, 0px) scale(1) rotate(0deg)" },
+              "33%": { transform: "translate(40vw, -40vh) scale(1.5) rotate(45deg)" },
+              "66%": { transform: "translate(-40vw, 20vh) scale(0.8) rotate(-20deg)" },
+              "100%": { transform: "translate(20vw, 40vh) scale(1.2) rotate(10deg)" }
+            },
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(30px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            burnIn: {
+              '0%': { opacity: '0', filter: 'blur(20px) brightness(2)', transform: 'translateY(20px) scale(0.95)' },
+              '100%': { opacity: '1', filter: 'blur(0) brightness(1)', transform: 'translateY(0) scale(1)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Geist', 'Inter', sans-serif;
+      background-color: #050505;
+      color: #f2f2f2;
+      overflow: hidden; 
+      height: 100vh;
+    }
+    
+    .anim-hidden { opacity: 0; }
+    ::selection { background: #ff1a1a; color: #fff; }
+
+    /* POPUP TRANSITIONS */
+    #launch-modal-backdrop {
+        transition: opacity 0.3s ease-in-out, visibility 0.3s;
+    }
+    .modal-visible { opacity: 1; visibility: visible; pointer-events: all; }
+    .modal-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    /* SLOW EXIT FADE (3 Seconds) */
+    #page-transition-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: #050505; 
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 3s cubic-bezier(0.6, 0, 0.4, 1); /* 3s Duration */
+    }
+    .fade-out-active {
+        opacity: 1 !important;
+        pointer-events: all !important;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="page-transition-overlay"></div>
+
+  <div id="launch-modal-backdrop" class="modal-hidden fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      
+    <div id="modal-card" class="bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 md:p-12 w-full max-w-md text-center shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden transition-all duration-700">
+        
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/20 blur-[20px]"></div>
+
+        <h2 id="sequence-label" class="text-textmuted font-mono text-xs tracking-[0.3em] uppercase mb-8 transition-opacity duration-500">
+            Deploying in
+        </h2>
+
+        <div class="font-mono text-8xl md:text-9xl font-bold text-white tracking-tighter mb-8 leading-none transition-all duration-500" id="countdown-display">
+            10
+        </div>
+
+        <button id="start-btn" onclick="startCountdown()" 
+            class="w-full bg-transparent border border-white/20 hover:bg-white hover:text-black hover:scale-[1.02] 
+                   text-white text-sm font-mono uppercase tracking-[0.2em] py-4 rounded-lg transition-all duration-300">
+            Launch
+        </button>
+
+        <p id="status-text" class="hidden text-white/50 text-xs font-mono mt-4 animate-pulse">
+            
+        </p>
+        
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-white/20 hover:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+  </div>
+
+
+  <button onclick="openModal()"
+     class="fixed bottom-12 left-1/2 -translate-x-1/2 z-50
+            border border-white/10 bg-white/5 backdrop-blur-md px-8 py-3 rounded-full
+            text-[10px] uppercase tracking-[0.2em] text-white font-medium
+            transition-all duration-300 hover:bg-white hover:text-black hover:border-white hover:scale-105 shadow-2xl cursor-pointer">
+    Initiate
+  </button>
+
+  <section class="h-screen w-screen relative flex flex-col items-center justify-center px-10">
+    <div class="absolute inset-0 w-full h-full pointer-events-none z-0 flex items-center justify-center opacity-60">
+      <div class="absolute top-1/2 left-1/2 w-[800px] h-[800px] bg-[#4a0000] rounded-full mix-blend-screen filter blur-[100px] opacity-70 animate-blob"></div>
+      <div class="absolute top-1/2 left-1/2 w-[600px] h-[600px] bg-[#ff1a1a] rounded-full mix-blend-screen filter blur-[120px] opacity-50 animate-blob" style="animation-delay: -2s; animation-duration: 9s"></div>
+      <div class="absolute top-1/2 left-1/2 w-[700px] h-[700px] bg-[#220000] rounded-full mix-blend-screen filter blur-[90px] opacity-80 animate-blob" style="animation-delay: -4s; animation-duration: 11s"></div>
+    </div>
+
+    <div class="flex flex-col items-center gap-8 relative z-10">
+      <h1 class="anim-element burn-in text-[6rem] md:text-[11rem] font-semibold tracking-[-0.06em] leading-none text-white mix-blend-overlay" data-anim="animate-burn-in">
+        QUANT.
+      </h1>
+      <div class="flex flex-col items-center gap-2">
+          <p class="anim-element fade-in text-xs md:text-sm tracking-[0.3em] uppercase text-accent font-mono" data-anim="animate-fade-in" style="animation-delay: 0.4s">
+            CIT CHENNAI
+          </p>
+          <p class="anim-element fade-in text-sm md:text-base tracking-[0.1em] text-white/60" data-anim="animate-fade-in" style="animation-delay: 0.6s">
+            Quantifying the Future
+          </p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // ----------------------------------------------
+    // LOGIC
+    // ----------------------------------------------
+    let timerInterval;
+    const modal = document.getElementById('launch-modal-backdrop');
+    const display = document.getElementById('countdown-display');
+    const btn = document.getElementById('start-btn');
+    const status = document.getElementById('status-text');
+    const label = document.getElementById('sequence-label');
+    const overlay = document.getElementById('page-transition-overlay');
+    const modalCard = document.getElementById('modal-card');
+
+    function openModal() {
+        modal.classList.remove('modal-hidden');
+        modal.classList.add('modal-visible');
+        resetTimer();
+    }
+
+    function closeModal() {
+        modal.classList.remove('modal-visible');
+        modal.classList.add('modal-hidden');
+        clearInterval(timerInterval);
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        display.innerText = "10";
+        // Reset styles
+        display.className = "font-mono text-8xl md:text-9xl font-bold text-white tracking-tighter mb-8 leading-none transition-all duration-500";
+        label.style.opacity = "1";
+        modalCard.style.borderColor = "rgba(255,255,255,0.1)";
+        
+        btn.classList.remove('hidden');
+        status.classList.add('hidden');
+    }
+
+    function startCountdown() {
+        let timeLeft = 10;
+        
+        btn.classList.add('hidden');
+        status.classList.remove('hidden');
+        
+        display.classList.remove('text-white');
+        display.classList.add('text-accent');
+        display.innerText = "10";
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            let displayNum = timeLeft < 10 ? "0" + timeLeft : timeLeft;
+            display.innerText = displayNum;
+
+            // --- THE ZERO MOMENT ---
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                display.innerText = "00";
+                
+                // 1. Brief pause at 00
+                setTimeout(() => {
+                    
+                    // 2. Reveal Brand Name & Glow Red
+                    display.classList.remove('text-8xl', 'md:text-9xl');
+                    display.classList.add('text-6xl', 'md:text-7xl', 'tracking-normal'); 
+                    display.innerHTML = "QUANT<span class='text-white'></span>"; 
+                    
+                    label.style.opacity = "0"; // Hide label cleanly
+                    status.innerText = "";
+                    
+                    // Modal Border turns Red
+                    modalCard.style.borderColor = "#ebebeb";
+                    modalCard.style.boxShadow = "0 0 100px rgba(255, 26, 26, 0.2)";
+
+                    // 3. Trigger Slow Fade to Black (3s)
+                    setTimeout(() => {
+                        overlay.classList.add('fade-out-active');
+                        
+                        // 4. Redirect after Fade completes (3000ms)
+                        setTimeout(() => {
+                            window.location.href = "home.html";
+                        }, 3000); 
+                        
+                    }, 1000); // Hold the "QUANT." text for 1s
+
+                }, 200);
+            }
+        }, 1000);
+    }
+
+    // ANIMATIONS
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          el.classList.remove('anim-hidden');
+          el.classList.add(el.dataset.anim);
+          observer.unobserve(el);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.anim-element').forEach(el => {
+      el.classList.add('anim-hidden'); 
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+</html>
